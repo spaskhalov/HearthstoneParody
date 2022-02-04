@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using HearthstoneParody.Configs;
 using HearthstoneParody.Data;
 using JetBrains.Annotations;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
+using Zenject;
 using Random = UnityEngine.Random;
+
 
 namespace HearthstoneParody.Core
 {
@@ -16,51 +20,93 @@ namespace HearthstoneParody.Core
         event Action<float> ProgressUpdatedEvent;
     }
 
+    public interface ICardsDatabaseProvider
+    {
+        public CardsDatabase CardsDatabase { get; }
+    }
+
     [UsedImplicitly]
-    public class CardsDatabaseLoader : ICardsDatabaseLoader
+    public class CardsDatabaseLoader : ICardsDatabaseLoader, ICardsDatabaseProvider
     {
         private readonly CardsDatabaseConfig _config;
         private int _completedTasksCounter;
+        private const string NamesCacheName = "NAMES_CACHE"; 
 
         public CardsDatabaseLoader(CardsDatabaseConfig config)
         {
             _config = config;
         }
+        
+        public event Action<float> ProgressUpdatedEvent;
+        
+        public CardsDatabase CardsDatabase { get; private set; }
 
         public async UniTask<CardsDatabase> LoadCardsDatabase()
         {
             _completedTasksCounter = 0;
+            var names = await GetNamesDB();
+
             var createCardsTasks = new List<UniTask<CardTemplate>>(_config.totalCards);
             for (int i = 0; i < _config.totalCards; i++)
             {
-                createCardsTasks.Add(CreateCardTemplate().ContinueWith(IncreaseProgress));
+                createCardsTasks.Add(CreateCardTemplate(names[i]).ContinueWith(IncreaseProgress));
             }
             
             var cards = await UniTask.WhenAll(createCardsTasks);
 
-            return new CardsDatabase
-            {
-                CardTemplates = cards
-            };
+            CardsDatabase = new CardsDatabase { CardTemplates = cards };
+            return CardsDatabase;
         }
 
-        public event Action<float> ProgressUpdatedEvent;
-        
-        private async UniTask<CardTemplate> CreateCardTemplate()
+        private async UniTask<string[]> GetNamesDB()
         {
-            var cardTemplate = new CardTemplate()
+            // var generateNamesUrl = _config.generateNamesUrl + _config.totalCards;
+            // string text = null;
+            // try
+            // {
+            //     Debug.Log($"Downloading random names from {_config.generateNamesUrl}... ");
+            //     using var namesRequest = await UnityWebRequest.Get(generateNamesUrl).SendWebRequest().ToUniTask();
+            //     if (namesRequest.result != UnityWebRequest.Result.Success)
+            //         throw new Exception($"Can't get names from {generateNamesUrl}");
+            //     text = namesRequest.downloadHandler.text.Replace("_", " ");
+            //     PlayerPrefs.SetString(NamesCacheName, text);
+            // }
+            // catch (Exception e)
+            // {
+            //     Debug.LogError($"Can't get random names from API.\nError:{e.Message}");
+            //     Debug.Log("Try to load names from PlayerPrefs");
+            //     text = PlayerPrefs.GetString(NamesCacheName, null);
+            // }
+            //
+            // if (!String.IsNullOrEmpty(text))
+            //     return JsonConvert.DeserializeObject<string[]>(text);
+
+            Debug.Log("No names in cache. We will use dumbest name ever");
+            var rez = new string[_config.totalCards];
+            for (int i = 0; i < _config.totalCards; i++)
+                rez[i] = $"Creature {i}";
+            return rez;
+        }
+
+        private async UniTask<CardTemplate> CreateCardTemplate(string title)
+        {
+            var mana = Random.Range(0, _config.maxMana);
+            var attack = Random.Range(0, _config.maxAttack);
+            var hp = Random.Range(1, _config.maxHealth);
+            return new CardTemplate()
             {
-                Attack = Random.Range(0, _config.maxAttack),
-                Mana = Random.Range(0, _config.maxMana),
-                HealthPoint = Random.Range(1, _config.maxHealth),
-                Art = await GetSpriteAsync(_config.artUrl)
+                Attack = attack,
+                Mana = mana,
+                HealthPoint = hp,
+                Art = await GetSpriteAsync(_config.artUrl),
+                Title = title,
+                Description = $"This magical creature costs {mana} mana, has {hp} life, and attacks with power {attack}"
             };
-            return cardTemplate;
         }
         
         private async UniTask<Sprite> GetSpriteAsync(string url)
         {
-            var request = UnityWebRequestTexture.GetTexture(url);
+            using var request = UnityWebRequestTexture.GetTexture(url);
             var requestResult = await request.SendWebRequest().ToUniTask();
             if (requestResult.result != UnityWebRequest.Result.Success)
                 throw new Exception($"Can't download Texture from url {url}");

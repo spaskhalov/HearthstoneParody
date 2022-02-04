@@ -10,5 +10,6 @@ namespace HearthstoneParody.Configs
         public int maxAttack = 8;
         public int maxMana = 20;
         public string artUrl = "https://picsum.photos/512";
+        public string generateNamesUrl = "http://names.drycodes.com/";
     }
 }

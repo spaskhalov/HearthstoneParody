@@ -1,19 +1,34 @@
+using System;
 using UniRx;
 using UnityEngine;
+using Zenject;
 
 namespace HearthstoneParody.Data
 {
-    public class Card : MonoBehaviour, ICard 
+    public class Card
     {
-        public ReactiveProperty<int> Attack { get; private set; }
-        public ReactiveProperty<int> HealthPoint { get; private set;}
-        public ReactiveProperty<int> Mana { get; private set;}
+        public ReactiveProperty<int> Attack;
+        public ReactiveProperty<int> HealthPoint;
+        public ReactiveProperty<int> Mana;
+        public string Title;
+        public string Description;
+        public Sprite Art;
 
-        public void Init(int attack, int healthPoint, int mana)
+        public Card(CardTemplate cardTemplate)
         {
-            Attack = new ReactiveProperty<int>(attack);
-            HealthPoint = new ReactiveProperty<int>(healthPoint);
-            Mana = new ReactiveProperty<int>(mana);
+            Attack = new ReactiveProperty<int>(cardTemplate.Attack);
+            HealthPoint = new ReactiveProperty<int>(cardTemplate.HealthPoint);
+            Mana = new ReactiveProperty<int>(cardTemplate.Mana);
+            Title = cardTemplate.Title;
+            Description = cardTemplate.Description;
+            Art = cardTemplate.Art;
         }
+        
+        public class Factory : PlaceholderFactory<CardTemplate, Card>
+        {
+        }
+        
     }
+    
+    
 }

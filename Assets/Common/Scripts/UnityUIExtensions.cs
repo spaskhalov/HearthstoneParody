@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using TMPro;
 using UniRx;
 
@@ -14,6 +15,6 @@ namespace HearthstoneParody.Data
         public static IDisposable SubscribeToText<T>(this IObservable<T> source, TMP_Text text)
         {
             return source.SubscribeWithState(text, (x, t) => t.text = x.ToString());
-        } 
+        }
     }
 }
