@@ -14,10 +14,11 @@ namespace HearthstoneParody.Presenters
     [RequireComponent(typeof(RectTransform))]
     public class CardPresenter : MonoBehaviour, ICardPresenter, IPointerDownHandler, IPointerUpHandler, IDragHandler, IDropHandler
     {
-        public BoolReactiveProperty IsSelectedByUser { get; } = new BoolReactiveProperty(false); 
-        public BoolReactiveProperty IsHighlighted => isHighlighted;
-        public event Action<ICardPresenter> IsDragged;
-        public event Action<ICardPresenter> IsDropped;
+        public BoolReactiveProperty IsHighlighted { get; } = new BoolReactiveProperty();
+        public BoolReactiveProperty IsSelectedByUser { get; } = new BoolReactiveProperty();
+        public event Action<ICardPresenter, PointerEventData> IsDraggedEvent;
+        public event Action<ICardPresenter, PointerEventData> PointerUpEvent;
+        public event Action<ICardPresenter, PointerEventData> PointerDownEvent;
 
         [SerializeField] private TMP_Text attackText;
         [SerializeField] private TMP_Text healthPointText;
@@ -27,8 +28,6 @@ namespace HearthstoneParody.Presenters
         [SerializeField] private Image artImage;
         [SerializeField] private Image backgroundImage;
         [SerializeField] private Material glowMaterial;
-
-        [SerializeField] private BoolReactiveProperty isHighlighted = new BoolReactiveProperty();
 
         private RectTransform _rectTransform;
         
@@ -43,8 +42,9 @@ namespace HearthstoneParody.Presenters
             SubscribeWithCounterAnim(Card.Attack, attackText);
             SubscribeWithCounterAnim(Card.HealthPoint, healthPointText);
             SubscribeWithCounterAnim(Card.Mana, manaText);
-            IsHighlighted.SubscribeWithState(backgroundImage
-                , (g, i) => i.material = g ? glowMaterial : null);
+            IsHighlighted.SubscribeWithState(backgroundImage,
+                (g, i) => i.material = g ? glowMaterial : null);
+            
         }
 
         public Card Card { get; private set; }
@@ -62,29 +62,29 @@ namespace HearthstoneParody.Presenters
         public void OnPointerDown(PointerEventData eventData)
         {
             IsSelectedByUser.Value = true;
+            PointerDownEvent?.Invoke(this, eventData);
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            Debug.Log($"OnPointerUp {Card.Title}");
             IsSelectedByUser.Value = false;
+            PointerUpEvent?.Invoke(this, eventData);
         }
         
         public void OnDrop(PointerEventData eventData)
         {
-            Debug.Log($"Drop {Card.Title}");
-            IsDropped?.Invoke(this);
+            Debug.Log($"OnDrop from card {Card.Title}");
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            IsDragged?.Invoke(this);
+            IsDraggedEvent?.Invoke(this, eventData);
         }
         
         private static IDisposable SubscribeWithCounterAnim(ReactiveProperty<int> property, TMP_Text text, 
             float tickDuration = 0.1f, float shakeStrength = 0.8f)
         {
-            //manual set inital value, to prevent flickering at start
+            //manual set initial value, to prevent flickering at start
             text.text = property.Value.ToString();
             return property.SubscribeWithState(text, (val, tmpText) =>
             {

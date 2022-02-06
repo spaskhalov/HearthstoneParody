@@ -2,6 +2,7 @@ using System;
 using HearthstoneParody.Data;
 using UniRx;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace HearthstoneParody.Presenters
 {
@@ -12,8 +13,8 @@ namespace HearthstoneParody.Presenters
         public void Init(Card card, Transform root);
         public BoolReactiveProperty IsHighlighted { get; }
         public BoolReactiveProperty IsSelectedByUser { get; }
-        public event Action<ICardPresenter> IsDragged;
-        public event Action<ICardPresenter> IsDropped;
-
+        public event Action<ICardPresenter, PointerEventData> IsDraggedEvent;
+        public event Action<ICardPresenter, PointerEventData> PointerUpEvent;
+        public event Action<ICardPresenter, PointerEventData> PointerDownEvent;
     }
 }

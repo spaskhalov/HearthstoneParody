@@ -16,17 +16,15 @@ namespace HearthstoneParody.Presenters
     [RequireComponent(typeof(RectTransform)), ExecuteAlways]
     public class PlayerPresenter : MonoBehaviour, IPointerClickHandler
     {
-        [SerializeField, Range(5, 50)] private float arcRadius = 20;
-        [SerializeField, Range(0,Mathf.PI / 6)] private float radiansBetweenCards = Mathf.PI / 30;
         [SerializeField] private float animationTime = 0.5f;
-        [SerializeField] private Transform activeCardPosition;
-        [SerializeField] private Transform playerHandRoot;
-        
+        [SerializeField] private Transform startPositionForActiveCard;
+        [SerializeField] private CardsLayoutPresenter cardsInHandPresenter;
+        [SerializeField] private CardsLayoutPresenter cardsOnTablePresenter;
+
         private readonly Player _player = new Player();
+        private readonly List<ICardPresenter> _createdCardPresenters = new List<ICardPresenter>();
         private CardPresenterFactory _cardPresenterFactory;
         private ICardsDeck _deck;
-        private ReactiveCollection<ICardPresenter> _cardsInHandPresenter = new ReactiveCollection<ICardPresenter>();
-        private ReactiveCollection<ICardPresenter> _cardsOnTablePresenter = new ReactiveCollection<ICardPresenter>();
 
         public void OnPointerClick(PointerEventData eventData)
         {
@@ -57,82 +55,83 @@ namespace HearthstoneParody.Presenters
             _cardPresenterFactory = cardPresenterFactory;
             _deck = deck;
         }
-        private Vector3 ArcPivot => playerHandRoot.position + (playerHandRoot.up * -1) * arcRadius;
+        
         private void Start()
         {
-            _cardsInHandPresenter.ObserveAdd().Subscribe((c) => RepositionCards());
-            _cardsInHandPresenter.ObserveRemove().Subscribe((c) => RepositionCards());
-
-            _player.CardsInHand.ObserveAdd().Subscribe(c =>
-            {
-                var presenter = _cardPresenterFactory.Create(c.Value, playerHandRoot);
-                presenter.IsSelectedByUser.Skip(1).SubscribeWithState(presenter, OnNextIsSelectedByUserCard);
-                _cardsInHandPresenter.Add(presenter);
-            });
+            _player.CardsInHand.ObserveAdd().Subscribe(c => 
+                cardsInHandPresenter.CardsCollection.Add(CreateOrGetCardPresenter(c.Value)));
             _player.CardsInHand.ObserveRemove().Subscribe(c =>
             {
-                var targetPresenter = _cardsInHandPresenter.FirstOrDefault(cp => cp.Card == c.Value);
+                var targetPresenter = cardsInHandPresenter.CardsCollection.FirstOrDefault(cp => cp.Card == c.Value);
                 if (targetPresenter == null) return;
-                _cardsInHandPresenter.Remove(targetPresenter);
+                cardsInHandPresenter.CardsCollection.Remove(targetPresenter);
+            });
+            
+            _player.CardsOnTable.ObserveAdd().Subscribe(c => 
+                cardsOnTablePresenter.CardsCollection.Add(CreateOrGetCardPresenter(c.Value)));
+            _player.CardsOnTable.ObserveRemove().Subscribe(c =>
+            {
+                var targetPresenter = cardsOnTablePresenter.CardsCollection.FirstOrDefault(cp => cp.Card == c.Value);
+                if (targetPresenter == null) return;
+                cardsOnTablePresenter.CardsCollection.Remove(targetPresenter);
+                Destroy(targetPresenter.RectTransform.gameObject);
             });
         }
 
-        private void OnNextIsSelectedByUserCard(bool selected, ICardPresenter c)
+        private ICardPresenter CreateOrGetCardPresenter(Card c)
         {
-            if (!selected)
-            {
-                _cardsInHandPresenter.Add(c);
-                return;
-            }
+            var alreadyCreated = _createdCardPresenters.FirstOrDefault(cp => cp.Card == c);
+            if (alreadyCreated != null)
+                return alreadyCreated;
             
-            _cardsInHandPresenter.Remove(c);
-            c.RectTransform.SetSiblingIndex(int.MaxValue);
-            c.RectTransform.DOKill();
-            c.RectTransform.DOMove(activeCardPosition.position, animationTime / 2);
-            c.RectTransform.DORotateQuaternion(activeCardPosition.rotation, animationTime / 2);
+            var presenter = _cardPresenterFactory.Create(c, transform);
+            presenter.IsDraggedEvent += OnCardIsDraggedEvent;
+            presenter.PointerDownEvent += OnCardPointerDownEvent;
+            presenter.PointerUpEvent += OnCardPointerUpEvent;
+            _createdCardPresenters.Add(presenter);
+            return presenter;
         }
 
-        private void RepositionCards()
+        private void OnCardPointerUpEvent(ICardPresenter cardPresenter, PointerEventData eventData)
         {
-            if(!_cardsInHandPresenter.Any())
-                return;
-            var angle = Mathf.PI / 2 + radiansBetweenCards * (_cardsInHandPresenter.Count - 1) / 2;
-            for(int i = 0; i < _cardsInHandPresenter.Count; i++)
+            if (eventData.hovered.Contains(cardsOnTablePresenter.gameObject))
             {
-                var card = _cardsInHandPresenter[i];
-                card.RectTransform.DOKill();
-                card.RectTransform.DOMove(GetPointOnCircle(angle), animationTime);
-                card.RectTransform.DORotateQuaternion(Quaternion.AngleAxis((angle - Mathf.PI / 2) * Mathf.Rad2Deg,Vector3.forward), animationTime);
-                angle -= radiansBetweenCards;
+                _player.CardsInHand.Remove(cardPresenter.Card);
+                _player.CardsOnTable.Add(cardPresenter.Card);
             }
+            else
+                cardsInHandPresenter.CardsCollection.Add(cardPresenter);
         }
 
-        private Vector2 GetPointOnCircle(float angle)
+        private void OnCardPointerDownEvent(ICardPresenter cardPresenter, PointerEventData arg2)
         {
-            var pivot = ArcPivot;
-            var x = pivot.x + arcRadius * Mathf.Cos(angle);
-            var y = pivot.y + arcRadius * Mathf.Sin(angle);
+            cardsInHandPresenter.CardsCollection.Remove(cardPresenter);
+            cardPresenter.RectTransform.SetParent(startPositionForActiveCard, true);
+            //cardPresenter.
+            cardPresenter.RectTransform.DOKill();
+            cardPresenter.RectTransform.DOMove(startPositionForActiveCard.position, animationTime / 2);
+            cardPresenter.RectTransform.DORotateQuaternion(startPositionForActiveCard.rotation, animationTime / 2);
+        }
+
+        private void OnCardIsDraggedEvent(ICardPresenter cardPresenter, PointerEventData eventData)
+        {
+            var cam = eventData.pressEventCamera;
+            var camPosition = cam.transform.position;
+            var startPos = startPositionForActiveCard.position;
+            var endPos = cardsOnTablePresenter.transform.position;
             
-            return new Vector2(x, y);
-        }
+            var pointOnGameField = cam.ScreenToWorldPoint(
+                new Vector3(eventData.position.x, eventData.position.y, endPos.z - camPosition.z));
+            var totalZDelta = endPos.z - startPos.z;
+            var totalYDelta = endPos.y - startPos.y;
+            var currentYDelta =  pointOnGameField.y - startPos.y;
+            var zDelta = currentYDelta * totalZDelta / totalYDelta;
+            //clamp z between start and end pos
+            var targetZ = Mathf.Clamp(startPos.z + zDelta, startPos.z, endPos.z);
 
-        private void OnValidate()
-        {
-            RepositionCards();
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(ArcPivot, arcRadius);
-            Gizmos.color = Color.yellow;
-            int pointsCount = 9;
-            var angle = Mathf.PI / 2 + radiansBetweenCards * (pointsCount-1) / 2;
-            for (int i = 0; i < pointsCount; i++)
-            {
-                Gizmos.DrawSphere(GetPointOnCircle(angle), 0.2f);
-                angle -= radiansBetweenCards;
-            }
+            var targetPos = cam.ScreenToWorldPoint(
+                new Vector3(eventData.position.x, eventData.position.y, targetZ - camPosition.z));
+            cardPresenter.RectTransform.DOMove(targetPos, animationTime / 2);
         }
     }
 }
