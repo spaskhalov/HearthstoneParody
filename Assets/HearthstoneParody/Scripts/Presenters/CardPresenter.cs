@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DG.Tweening;
 using HearthstoneParody.Data;
 using TMPro;
@@ -12,14 +13,8 @@ using Zenject;
 namespace HearthstoneParody.Presenters
 {
     [RequireComponent(typeof(RectTransform))]
-    public class CardPresenter : MonoBehaviour, ICardPresenter, IPointerDownHandler, IPointerUpHandler, IDragHandler, IDropHandler
+    public class CardPresenter : MonoBehaviour, ICardPresenter, IPointerDownHandler, IPointerUpHandler, IDragHandler
     {
-        public BoolReactiveProperty IsHighlighted { get; } = new BoolReactiveProperty();
-        public BoolReactiveProperty IsSelectedByUser { get; } = new BoolReactiveProperty();
-        public event Action<ICardPresenter, PointerEventData> IsDraggedEvent;
-        public event Action<ICardPresenter, PointerEventData> PointerUpEvent;
-        public event Action<ICardPresenter, PointerEventData> PointerDownEvent;
-
         [SerializeField] private TMP_Text attackText;
         [SerializeField] private TMP_Text healthPointText;
         [SerializeField] private TMP_Text manaText;
@@ -28,26 +23,14 @@ namespace HearthstoneParody.Presenters
         [SerializeField] private Image artImage;
         [SerializeField] private Image backgroundImage;
         [SerializeField] private Material glowMaterial;
-
         private RectTransform _rectTransform;
-        
-        public void Init(Card card, Transform root)
-        {
-            RectTransform.SetParent(root, false);
-            Card = card;
-            artImage.sprite = card.Art;
-            titleText.text = card.Title;
-            descriptionText.text = card.Description;
-            
-            SubscribeWithCounterAnim(Card.Attack, attackText);
-            SubscribeWithCounterAnim(Card.HealthPoint, healthPointText);
-            SubscribeWithCounterAnim(Card.Mana, manaText);
-            IsHighlighted.SubscribeWithState(backgroundImage,
-                (g, i) => i.material = g ? glowMaterial : null);
-            
-        }
 
+        public event Action<ICardPresenter, PointerEventData> IsDraggedEvent;
+        public event Action<ICardPresenter, PointerEventData> PointerUpEvent;
+        public event Action<ICardPresenter, PointerEventData> PointerDownEvent;
+        
         public Card Card { get; private set; }
+        public PlayerPresenterBase Owner { get; private set; }
 
         public RectTransform RectTransform
         {
@@ -59,21 +42,32 @@ namespace HearthstoneParody.Presenters
             }
         }
 
+        public void Init(Card card, PlayerPresenterBase owner)
+        {
+            RectTransform.SetParent(owner.transform, false);
+            Owner = owner;
+            Card = card;
+            artImage.sprite = card.Art;
+            titleText.text = card.Title;
+            descriptionText.text = card.Description;
+            
+            SubscribeWithCounterAnim(Card.Attack, attackText);
+            SubscribeWithCounterAnim(Card.HealthPoint, healthPointText);
+            SubscribeWithCounterAnim(Card.Mana, manaText);
+            card.IsHighlighted.SubscribeWithState(backgroundImage,
+                (g, i) => i.material = g ? glowMaterial : null);
+        }
+
         public void OnPointerDown(PointerEventData eventData)
         {
-            IsSelectedByUser.Value = true;
+            Card.IsSelectedByUser.Value = true;
             PointerDownEvent?.Invoke(this, eventData);
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            IsSelectedByUser.Value = false;
+            Card.IsSelectedByUser.Value = false;
             PointerUpEvent?.Invoke(this, eventData);
-        }
-        
-        public void OnDrop(PointerEventData eventData)
-        {
-            Debug.Log($"OnDrop from card {Card.Title}");
         }
 
         public void OnDrag(PointerEventData eventData)

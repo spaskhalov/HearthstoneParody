@@ -1,46 +1,58 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
+using HearthstoneParody.Data;
 using UniRx;
 using UnityEngine;
 
 namespace HearthstoneParody.Presenters
 {
+    [ExecuteAlways]
     public abstract class CardsLayoutPresenter : MonoBehaviour
     {
         [SerializeField] private float animationTime = 0.5f;
         [SerializeField] private Color gizmosColor = Color.yellow;
         [SerializeField] private Transform rootForUnnecessaryCards;
-        public ReactiveCollection<ICardPresenter> CardsCollection { get; } = new ReactiveCollection<ICardPresenter>();
+        private ReactiveCollection<Card> _cards;
+        private readonly List<ICardPresenter> _cardPresenters = new List<ICardPresenter>();
 
         protected abstract List<(Vector3, Quaternion)> GetPositionsAndRotations(int count);
 
-        private void Start()
+        public void Init(ReactiveCollection<Card> cardsCollection, Func<Card, ICardPresenter> createOrGetCardPresenter)
         {
-            CardsCollection.ObserveAdd().Subscribe((c) =>
+            _cards = cardsCollection;
+            _cards.ObserveAdd().Subscribe(c =>
             {
-                c.Value.RectTransform.SetParent(transform, true);
+                var cardPresenter = createOrGetCardPresenter(c.Value);
+                cardPresenter.RectTransform.SetParent(transform, true);
+                _cardPresenters.Add(cardPresenter);
                 RepositionCards();
             });
-            CardsCollection.ObserveRemove().Subscribe((c) =>
+            _cards.ObserveRemove().Subscribe(c =>
             {
-                c.Value.RectTransform.SetParent(rootForUnnecessaryCards, true);
+                var targetPresenter = _cardPresenters.FirstOrDefault(cp => cp.Card == c.Value);
+                if (targetPresenter == null) return;
+                targetPresenter.RectTransform.SetParent(rootForUnnecessaryCards, true);
+                _cardPresenters.Remove(targetPresenter);
                 RepositionCards();
             });
         }
 
         private void RepositionCards()
         {
-            if(!CardsCollection.Any())
+            if(!_cardPresenters.Any())
                 return;
-            var cardTransforms = GetPositionsAndRotations(CardsCollection.Count);
-            for(int i = 0; i < CardsCollection.Count; i++)
+            var cardTransforms = GetPositionsAndRotations(_cardPresenters.Count);
+            for(int i = 0; i < _cardPresenters.Count; i++)
             {
-                var card = CardsCollection[i];
+                var cardPresenter = _cardPresenters[i];
                 var cardTransform = cardTransforms[i]; 
-                card.RectTransform.DOKill();
-                card.RectTransform.DOMove(cardTransform.Item1, animationTime);
-                card.RectTransform.DORotateQuaternion(cardTransform.Item2, animationTime);
+                cardPresenter.RectTransform.DOKill();
+                cardPresenter.RectTransform
+                    .DOMove(cardTransform.Item1, animationTime)
+                    .SetEase(Ease.OutQuad);
+                cardPresenter.RectTransform.DORotateQuaternion(cardTransform.Item2, animationTime);
             }
         }
 

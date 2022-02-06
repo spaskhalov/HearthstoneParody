@@ -17,7 +17,7 @@ namespace HearthstoneParody.Installers
             Container.BindInterfacesAndSelfTo<CardsDatabaseLoader>().AsSingle();
             Container.BindInterfacesAndSelfTo<ProgressLogger>().AsSingle();
 
-            Container.BindFactory<CardTemplate, Card, Card.Factory>();
+            Container.BindFactory<CardTemplate, Player, Card, Card.Factory>();
         }
     }
 }

@@ -8,13 +8,13 @@ using Zenject;
 namespace HearthstoneParody.Core
 {
     [UsedImplicitly]
-    public class CardPresenterFactory : PlaceholderFactory<Card, Transform, ICardPresenter>
+    public class CardPresenterFactory : PlaceholderFactory<Card, PlayerPresenterBase, ICardPresenter>
     {
         
     }
 
     [UsedImplicitly]
-    public class CustomCardPresenterFactory : IFactory<Card, Transform, ICardPresenter>
+    public class CustomCardPresenterFactory : IFactory<Card, PlayerPresenterBase, ICardPresenter>
     {
         private readonly DiContainer _container;
         private readonly GameObject _cardPrefab;
@@ -25,7 +25,7 @@ namespace HearthstoneParody.Core
             _cardPrefab = cardPrefab;
         }
 
-        public ICardPresenter Create(Card card, Transform root)
+        public ICardPresenter Create(Card card, PlayerPresenterBase root)
         {
             var cardPresenter = _container.InstantiatePrefabForComponent<ICardPresenter>(_cardPrefab);
             cardPresenter.Init(card, root);

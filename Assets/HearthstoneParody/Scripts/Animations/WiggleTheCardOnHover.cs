@@ -22,7 +22,7 @@ namespace HearthstoneParody.Animations
         {
             if(_goingUpTween != null 
                || DOTween.IsTweening(_cardPresenter.RectTransform) 
-               || _cardPresenter.IsSelectedByUser.Value)
+               || _cardPresenter.Card.IsSelectedByUser.Value)
                 return;
             
             var targetPosition = _cardPresenter.RectTransform.localPosition 
