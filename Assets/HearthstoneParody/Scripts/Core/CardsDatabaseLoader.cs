@@ -60,26 +60,26 @@ namespace HearthstoneParody.Core
 
         private async UniTask<string[]> GetNamesDB()
         {
-            // var generateNamesUrl = _config.generateNamesUrl + _config.totalCards;
-            // string text = null;
-            // try
-            // {
-            //     Debug.Log($"Downloading random names from {_config.generateNamesUrl}... ");
-            //     using var namesRequest = await UnityWebRequest.Get(generateNamesUrl).SendWebRequest().ToUniTask();
-            //     if (namesRequest.result != UnityWebRequest.Result.Success)
-            //         throw new Exception($"Can't get names from {generateNamesUrl}");
-            //     text = namesRequest.downloadHandler.text.Replace("_", " ");
-            //     PlayerPrefs.SetString(NamesCacheName, text);
-            // }
-            // catch (Exception e)
-            // {
-            //     Debug.LogError($"Can't get random names from API.\nError:{e.Message}");
-            //     Debug.Log("Try to load names from PlayerPrefs");
-            //     text = PlayerPrefs.GetString(NamesCacheName, null);
-            // }
-            //
-            // if (!String.IsNullOrEmpty(text))
-            //     return JsonConvert.DeserializeObject<string[]>(text);
+            var generateNamesUrl = _config.generateNamesUrl + _config.totalCards;
+            string text = null;
+            try
+            {
+                Debug.Log($"Downloading random names from {_config.generateNamesUrl}... ");
+                using var namesRequest = await UnityWebRequest.Get(generateNamesUrl).SendWebRequest().ToUniTask();
+                if (namesRequest.result != UnityWebRequest.Result.Success)
+                    throw new Exception($"Can't get names from {generateNamesUrl}");
+                text = namesRequest.downloadHandler.text.Replace("_", " ");
+                PlayerPrefs.SetString(NamesCacheName, text);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Can't get random names from API.\nError:{e.Message}");
+                Debug.Log("Try to load names from PlayerPrefs");
+                text = PlayerPrefs.GetString(NamesCacheName, null);
+            }
+            
+            if (!String.IsNullOrEmpty(text))
+                return JsonConvert.DeserializeObject<string[]>(text);
 
             Debug.Log("No names in cache. We will use dumbest name ever");
             var rez = new string[_config.totalCards];

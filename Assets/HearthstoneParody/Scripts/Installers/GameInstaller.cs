@@ -1,3 +1,4 @@
+using HearthstoneParody.Configs;
 using HearthstoneParody.Core;
 using HearthstoneParody.Data;
 using HearthstoneParody.GameLogic;
@@ -10,20 +11,14 @@ namespace HearthstoneParody.Installers
 {
     public class GameInstaller : MonoInstaller
     {
-        [SerializeField] private Transform cardRoot;
-        [SerializeField] private GameObject cardViewPrefab;
-        [SerializeField] private Button endTurnButton;
-        [SerializeField] private PlayerPresenterBase CPUPlayer;
+        
+        [SerializeField] private GameControllerConfig gameControllerConfig;
         
         public override void InstallBindings()
         {
-            Container.BindInterfacesAndSelfTo<GameBootStrapper>().AsSingle().WithArguments(cardRoot).NonLazy();
             Container.BindInterfacesAndSelfTo<RandomCardsDeck>().AsSingle();
-            Container.BindInstance(cardViewPrefab);
-            Container.BindFactory<Card, PlayerPresenterBase, ICardPresenter, CardPresenterFactory>().FromFactory<CustomCardPresenterFactory>();
-
-            Container.BindInstance(CPUPlayer.Player).AsSingle();
-            Container.BindInterfacesAndSelfTo<GameController>().AsSingle().WithArguments(endTurnButton).NonLazy();
+            Container.BindInstance(gameControllerConfig);
+            Container.BindInterfacesAndSelfTo<GameController>().AsSingle().NonLazy();
             
         }
     }

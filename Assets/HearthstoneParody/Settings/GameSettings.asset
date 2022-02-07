@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43e96705d7adc41d98bd58cab0376b61, type: 3}
+  m_Name: GameSettings
+  m_EditorClassIdentifier: 
+  cardsDatabaseConfig:
+    totalCards: 50
+    maxHealth: 10
+    maxAttack: 10
+    maxMana: 10
+    artUrl: https://picsum.photos/512
+    generateNamesUrl: http://names.drycodes.com/
+  gameBalanceConfig:
+    playerStartHealthPoint: 15
+    playerStartMana: 5
+    manaPerRoundIncrease: 2
+    minCardAtStart: 4
+    maxCardAtStart: 6
+    newCardPerRound: 1

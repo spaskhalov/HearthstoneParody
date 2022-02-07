@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/HearthstoneParody/Scenes/Game.unity
+    guid: 1bafaf53802f84fc4945b2c87764e287
   m_configObjects: {}

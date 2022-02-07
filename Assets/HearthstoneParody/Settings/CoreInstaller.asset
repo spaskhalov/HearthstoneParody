@@ -12,9 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c36d4253225194ebb949d392cf4d4558, type: 3}
   m_Name: CoreInstaller
   m_EditorClassIdentifier: 
-  _deckConfig:
-    totalCards: 50
-    maxHealth: 10
-    maxAttack: 8
-    maxMana: 20
-    artUrl: https://picsum.photos/512
+  cardViewPrefab: {fileID: 7023087405507032148, guid: d9ae77e879825477093b4c51e7f17be0, type: 3}

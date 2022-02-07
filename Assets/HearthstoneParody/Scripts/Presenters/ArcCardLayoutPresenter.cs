@@ -9,8 +9,6 @@ namespace HearthstoneParody.Presenters
         [SerializeField, Range(100, 5000)] private float arcRadius = 1000;
         [SerializeField, Range(0,Mathf.PI / 6)] private float radiansBetweenCards = Mathf.PI / 30;
         
-        private float ArcRadiusInGlobal => arcRadius * gameObject.transform.lossyScale.x;
-
         protected override List<(Vector3, Quaternion)> GetPositionsAndRotations(int count)
         {
             var rez = new List<(Vector3, Quaternion)>(count);
@@ -32,6 +30,8 @@ namespace HearthstoneParody.Presenters
             return rez;
         }
         
+        private float ArcRadiusInGlobal => arcRadius * gameObject.transform.lossyScale.x;
+
         private Vector2 GetPointOnCircle(float angle, Vector3 pivot)
         {
             var x = pivot.x + ArcRadiusInGlobal * Mathf.Cos(angle);

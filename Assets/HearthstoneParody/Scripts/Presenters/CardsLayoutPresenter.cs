@@ -11,13 +11,11 @@ namespace HearthstoneParody.Presenters
     [ExecuteAlways]
     public abstract class CardsLayoutPresenter : MonoBehaviour
     {
+        public readonly List<ICardPresenter> CardPresenters = new List<ICardPresenter>();
         [SerializeField] private float animationTime = 0.5f;
         [SerializeField] private Color gizmosColor = Color.yellow;
         [SerializeField] private Transform rootForUnnecessaryCards;
         private ReactiveCollection<Card> _cards;
-        private readonly List<ICardPresenter> _cardPresenters = new List<ICardPresenter>();
-
-        protected abstract List<(Vector3, Quaternion)> GetPositionsAndRotations(int count);
 
         public void Init(ReactiveCollection<Card> cardsCollection, Func<Card, ICardPresenter> createOrGetCardPresenter)
         {
@@ -26,27 +24,29 @@ namespace HearthstoneParody.Presenters
             {
                 var cardPresenter = createOrGetCardPresenter(c.Value);
                 cardPresenter.RectTransform.SetParent(transform, true);
-                _cardPresenters.Add(cardPresenter);
+                CardPresenters.Add(cardPresenter);
                 RepositionCards();
             });
             _cards.ObserveRemove().Subscribe(c =>
             {
-                var targetPresenter = _cardPresenters.FirstOrDefault(cp => cp.Card == c.Value);
+                var targetPresenter = CardPresenters.FirstOrDefault(cp => cp.Card == c.Value);
                 if (targetPresenter == null) return;
                 targetPresenter.RectTransform.SetParent(rootForUnnecessaryCards, true);
-                _cardPresenters.Remove(targetPresenter);
+                CardPresenters.Remove(targetPresenter);
                 RepositionCards();
             });
         }
+        
+        protected abstract List<(Vector3, Quaternion)> GetPositionsAndRotations(int count);
 
         private void RepositionCards()
         {
-            if(!_cardPresenters.Any())
+            if(!CardPresenters.Any())
                 return;
-            var cardTransforms = GetPositionsAndRotations(_cardPresenters.Count);
-            for(int i = 0; i < _cardPresenters.Count; i++)
+            var cardTransforms = GetPositionsAndRotations(CardPresenters.Count);
+            for(int i = 0; i < CardPresenters.Count; i++)
             {
-                var cardPresenter = _cardPresenters[i];
+                var cardPresenter = CardPresenters[i];
                 var cardTransform = cardTransforms[i]; 
                 cardPresenter.RectTransform.DOKill();
                 cardPresenter.RectTransform

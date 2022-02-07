@@ -6,7 +6,7 @@ namespace HearthstoneParody.GameLogic
 {
     public interface ICardsDeck
     {
-        Card GetNextCard(Player owner);
+        Card GetNextCard();
     }
 
     public class RandomCardsDeck : ICardsDeck
@@ -20,11 +20,11 @@ namespace HearthstoneParody.GameLogic
             _cardsDatabaseProvider = cardsDatabaseProvider;
         }
 
-        public Card GetNextCard(Player owner)
+        public Card GetNextCard()
         {
             var cardTemplate = _cardsDatabaseProvider.CardsDatabase.CardTemplates[
                 Random.Range(0, _cardsDatabaseProvider.CardsDatabase.CardTemplates.Length)];
-            return _cardFactory.Create(cardTemplate, owner);
+            return _cardFactory.Create(cardTemplate);
         }
     }
 }
